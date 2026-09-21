@@ -1,6 +1,6 @@
 # D5
 
-# ⚔️ Projet Pygame : Plateforme  PvP (2 Joueurs)
+# Projet Pygame : Plateforme  PvP (2 Joueurs)
 
 Bienvenue dans le dépôt officiel de notre jeu de combat en arène ! Ce document sert de feuille de route et de guide de démarrage pour toute l'équipe. Lisez attentivement votre rôle et les règles de collaboration avant de pousser votre premier code.
 
@@ -87,7 +87,7 @@ deactivate
 
 Pour éviter de travailler sur les mêmes lignes de code en même temps (et s'entretuer sur Git), les tâches sont strictement séparées :
 
-###♂️ Développeur 1 : L'Intégrateur & Moteur Global (Lead Dev)
+### Développeur 1 : L'Intégrateur & Moteur Global (Lead Dev)
 *   **Mission :** Créer la structure globale du projet (`main.py`, `game.py`) et centraliser le travail des autres.
 *   **Tâches prioritaires :** 
     *   Mettre en place la boucle principale et la structure de fichiers.
@@ -101,7 +101,7 @@ Pour éviter de travailler sur les mêmes lignes de code en même temps (et s'en
     *   Développer le système de gravité constante appliquée aux joueurs.
     *   Gérer la collision verticale (le joueur s'arrête net quand il touche le sol ou une plateforme par le haut).
 
-###♂️ Développeur 3 : Le Concepteur des Joueurs (Mécaniques & Inputs)
+### Développeur 3 : Le Concepteur des Joueurs (Mécaniques & Inputs)
 *   **Mission :** Donner vie aux deux combattants.
 *   **Tâches prioritaires :**
     *   Créer la classe `Player` (héritant de `pygame.sprite.Sprite`).
