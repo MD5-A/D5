@@ -6,11 +6,79 @@ Bienvenue dans le dépôt officiel de notre jeu de combat en arène ! Ce documen
 
 ---
 
-##Configuration Initiale
-Chaque développeur doit installer la version requise de Pygame dans son environnement virtuel :
+## Configuration initiale
+
+Chaque développeur doit créer puis activer un environnement virtuel avant
+d’installer Pygame.
+
+### Compatibilité avec Python 3.14 (`pygame-ce`)
+
+Avec Python 3.14, installez `pygame-ce` plutôt que le paquet `pygame` :
+
 ```bash
-python -m venv venv
-pip install pygame
+python -m pip install pygame-ce
+```
+
+`pygame-ce` est une version communautaire compatible avec Python 3.14. Son
+installation fournit toujours le module importé sous le nom `pygame`, donc le
+code du projet ne change pas :
+
+```python
+import pygame
+```
+
+Si vous exécutez `python -m pip install pygame` avec Python 3.14, `pip` peut
+télécharger une archive source (`pygame-2.6.1.tar.gz`) au lieu d'une version
+précompilée. Il tente alors de compiler Pygame et échoue souvent avec des
+messages comme `sdl2-config: not found` ou `freetype2 was not found`. Cette
+erreur signifie généralement que la version classique de Pygame ne fournit
+pas encore de paquet adapté à votre version de Python, et non qu'il y a un
+problème dans le code du jeu.
+
+Pour vérifier l'installation :
+
+```bash
+python -c "import pygame; print(pygame.version.ver)"
+```
+
+Avec Python 3.13 ou une version antérieure, `pygame` classique peut également
+être utilisé :
+
+```bash
+python -m pip install pygame
+```
+
+### Linux (et macOS)
+
+```bash
+python3 -m venv venv
+source venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install pygame-ce
+```
+
+### Windows (PowerShell)
+
+```powershell
+py -m venv venv
+.\venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+python -m pip install pygame-ce
+```
+
+### Windows (Invite de commandes)
+
+```bat
+py -m venv venv
+venv\Scripts\activate.bat
+python -m pip install --upgrade pip
+python -m pip install pygame-ce
+```
+
+Pour quitter l’environnement virtuel :
+
+```bash
+deactivate
 ```
 
 ---
@@ -72,6 +140,17 @@ Pour travailler proprement, notre dossier `src/` sera découpé ainsi. Ne modifi
 │   └── ui.py                # Affichage des barres de vie (Dev 5)
 └── README.md
 ```
+
+### Lancer le jeu
+
+Depuis la racine du projet, avec l’environnement virtuel activé :
+
+```bash
+python -m src.main
+```
+
+Le joueur 1 utilise `Q/D` pour se déplacer, `Espace` pour sauter et `E` pour
+tirer. Le joueur 2 utilise les flèches, `↑` pour sauter et `Entrée` pour tirer.
 
 ---
 
