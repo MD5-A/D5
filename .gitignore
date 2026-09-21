@@ -1,1 +1,32 @@
+# Environnements virtuels
+venv/
+.venv/
+env/
+.env/
+
+# Fichiers Python générés
 __pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+
+# Outils de test et de couverture
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# Analyse et typage
+.mypy_cache/
+.pyright/
+.ruff_cache/
+
+# Environnements de développement
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Fichiers système
+.DS_Store
+Thumbs.db
