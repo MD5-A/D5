@@ -3,6 +3,7 @@ venv/
 .venv/
 env/
 .env/
+Lazarus/
 
 # Fichiers Python générés
 __pycache__/
@@ -30,3 +31,7 @@ htmlcov/
 # Fichiers système
 .DS_Store
 Thumbs.db
+
+# Autres
+tmp/
+temporaire/
