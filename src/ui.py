@@ -24,3 +24,14 @@ class HUD:
         label = self.font.render("Joueur 1        Joueur 2", True, (240, 240, 240))
         surface.blit(label, label.get_rect(center=(surface.get_width() // 2, 28)))
 
+    def draw_menu(self, surface, title, description, subtitle) -> None:
+        overlay = pygame.Surface(surface.get_size(), pygame.SRCALPHA)
+        overlay.fill((8, 10, 24, 150))
+        surface.blit(overlay, (0, 0))
+        title_image = self.font.render(title, True, (255, 220, 110))
+        description_image = self.font.render(description, True, (210, 218, 240))
+        subtitle_image = self.font.render(subtitle, True, (240, 243, 255))
+        center_x = surface.get_width() // 2
+        surface.blit(title_image, title_image.get_rect(center=(center_x, 190)))
+        surface.blit(description_image, description_image.get_rect(center=(center_x, 255)))
+        surface.blit(subtitle_image, subtitle_image.get_rect(center=(center_x, 320)))
