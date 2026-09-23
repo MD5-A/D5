@@ -40,3 +40,5 @@ temporaire/
 
 # Notes locales de développement (ne pas publier)
 /notes/developpeur5.local.md
+src/__pycache__/game.cpython-314.pyc
+src/__pycache__/ui.cpython-314.pyc
