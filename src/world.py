@@ -38,4 +38,7 @@ class World:
                 player.rect.bottom = platform.rect.top
                 player.velocity_y = 0
                 player.on_ground = True
+                # Réinitialiser les sauts disponibles si le joueur les gère
+                if hasattr(player, "max_jumps") and hasattr(player, "jumps_left"):
+                    player.jumps_left = player.max_jumps
 
