@@ -19,6 +19,14 @@ class SpriteAnimation:
             frame = self.sheet.subsurface(
                 pygame.Rect(frame_data["x"], frame_data["y"], frame_data["w"], frame_data["h"])
             ).copy()
+            # Les spritesheets contiennent une marge transparente sous les pieds.
+            # On la repositionne sans recadrer le personnage afin que son bas
+            # visible coïncide avec le bas du rectangle physique du joueur.
+            visible_bounds = frame.get_bounding_rect(min_alpha=1)
+            if visible_bounds.height > 0:
+                aligned = pygame.Surface(frame.get_size(), pygame.SRCALPHA)
+                aligned.blit(frame, (0, frame.get_height() - visible_bounds.bottom))
+                frame = aligned
             self.frames.append(pygame.transform.smoothscale(frame, size))
 
         self.index = 0
@@ -48,4 +56,3 @@ def load_character_animations(folder_name: str, character_name: str) -> dict[str
         if image_path.exists() and data_path.exists():
             animations[animation_name] = SpriteAnimation(image_path, data_path)
     return animations
-
