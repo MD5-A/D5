@@ -2,7 +2,6 @@
 
 import pygame
 import math
-import math
 
 
 class Player(pygame.sprite.Sprite):
@@ -28,9 +27,8 @@ class Player(pygame.sprite.Sprite):
 
     # Paramètres de dash (double-tap)
     DOUBLE_TAP_WINDOW = 0.25   # secondes entre 2 appuis pour dash
-    DASH_DURATION = 0.12
-    DASH_SPEED = 16.0
-    SHIELD_RECHARGE_ON_HIT = 8  # recharge légère du bouclier quand on touche l'adversaire
+    DASH_DURATION = 0.16
+    DASH_SPEED = 18.0
 
     def __init__(
         self,
@@ -52,11 +50,16 @@ class Player(pygame.sprite.Sprite):
         self.health = 100
         self.moving = False
 
+        # Double saut
+        self.max_jumps = 2
+        self.jumps_left = 2
+
         # États d'entrée pour détection des fronts
         self._prev_attack_pressed = False
         self._prev_shield_pressed = False
         self._prev_left_pressed = False
         self._prev_right_pressed = False
+        self._prev_jump_pressed = False
 
         # Attaque chargée
         self.charging = False
@@ -70,38 +73,71 @@ class Player(pygame.sprite.Sprite):
         # Effets bouclier
         self.parry_flash_timer = 0.0
         self.shield_anim_time = 0.0
+        # Effets attaque chargée
+        self.charge_anim_time = 0.0
+        self.charge_flash_timer = 0.0
 
         # Dash (double-tap)
         self.time_since_last_tap_left = 999.0
         self.time_since_last_tap_right = 999.0
         self.dash_time_remaining = 0.0
         self.dash_direction = 0
-        # Animation/flash du bouclier
-        self.parry_flash_timer = 0.0
-        self.shield_anim_time = 0.0
 
     def handle_input(self, keys, dt: float) -> dict | None:
         """
-        Gère déplacement, saut, charge/relâchement d'attaque et bouclier.
+        Gère déplacement, saut, dash (double-tap), charge/relâchement d'attaque et bouclier.
         Retourne un dict avec les infos de tir quand un projectile doit être créé:
         {"fired": True, "damage": int, "speed": float, "charged": bool}
         Sinon retourne {"fired": False}.
         """
-        # Déplacement
-        self.moving = False
-        if keys[self.controls["left"]]:
-            self.rect.x -= self.SPEED
-            self.facing = -1
-            self.moving = True
-        if keys[self.controls["right"]]:
-            self.rect.x += self.SPEED
-            self.facing = 1
-            self.moving = True
-        if keys[self.controls["jump"]] and self.on_ground:
-            self.velocity_y = self.JUMP_FORCE
-            self.on_ground = False
-
+        # Timers
         self.since_last_shot += dt
+
+        # Double-tap pour dash
+        self.time_since_last_tap_left += dt
+        self.time_since_last_tap_right += dt
+        lp = keys[self.controls["left"]]
+        rp = keys[self.controls["right"]]
+
+        if lp and not self._prev_left_pressed:
+            if self.time_since_last_tap_left <= self.DOUBLE_TAP_WINDOW and self.dash_time_remaining <= 0.0:
+                self.dash_direction = -1
+                self.dash_time_remaining = self.DASH_DURATION
+            self.time_since_last_tap_left = 0.0
+        if rp and not self._prev_right_pressed:
+            if self.time_since_last_tap_right <= self.DOUBLE_TAP_WINDOW and self.dash_time_remaining <= 0.0:
+                self.dash_direction = 1
+                self.dash_time_remaining = self.DASH_DURATION
+            self.time_since_last_tap_right = 0.0
+
+        # Déplacement (priorité au dash)
+        self.moving = False
+        if self.dash_time_remaining > 0.0:
+            self.rect.x += int(round(self.DASH_SPEED)) * self.dash_direction
+            self.facing = self.dash_direction
+            self.moving = True
+            self.dash_time_remaining -= dt
+        else:
+            if lp:
+                self.rect.x -= self.SPEED
+                self.facing = -1
+                self.moving = True
+            if rp:
+                self.rect.x += self.SPEED
+                self.facing = 1
+                self.moving = True
+
+        # Double saut (détection de front)
+        jp = keys[self.controls["jump"]]
+        if jp and not self._prev_jump_pressed:
+            if self.on_ground:
+                self.velocity_y = self.JUMP_FORCE
+                self.on_ground = False
+                # Consomme le premier saut, garde le second
+                self.jumps_left = max(0, getattr(self, "max_jumps", 2) - 1)
+            elif getattr(self, "jumps_left", 0) > 0:
+                self.velocity_y = self.JUMP_FORCE
+                self.jumps_left -= 1
 
         # Gestion du bouclier
         shield_pressed = self.controls.get("shield")
@@ -137,11 +173,16 @@ class Player(pygame.sprite.Sprite):
             charged = ratio >= 0.5
             self.since_last_shot = 0.0
             self.charging = False
+            # Flash visuel d'émission
+            self.charge_flash_timer = 0.15
             fired_info = {"fired": True, "damage": damage, "speed": speed, "charged": charged}
 
         # Mémoriser états précédents
         self._prev_attack_pressed = ap
         self._prev_shield_pressed = sp
+        self._prev_left_pressed = lp
+        self._prev_right_pressed = rp
+        self._prev_jump_pressed = jp
 
         return fired_info or {"fired": False}
 
@@ -156,11 +197,11 @@ class Player(pygame.sprite.Sprite):
             self.parry_flash_timer = max(0.0, self.parry_flash_timer - dt)
         if getattr(self, "shielding", False) and getattr(self, "shield_durability", 0) > 0:
             self.shield_anim_time += dt
-        # Effets bouclier
-        if hasattr(self, "parry_flash_timer") and self.parry_flash_timer > 0.0:
-            self.parry_flash_timer = max(0.0, self.parry_flash_timer - dt)
-        if getattr(self, "shielding", False) and getattr(self, "shield_durability", 0) > 0:
-            self.shield_anim_time += dt
+        # Effets visuels: attaque chargée
+        if getattr(self, "charging", False):
+            self.charge_anim_time += dt
+        if getattr(self, "charge_flash_timer", 0.0) > 0.0:
+            self.charge_flash_timer = max(0.0, self.charge_flash_timer - dt)
 
     def draw(self, surface: pygame.Surface) -> None:
         def draw_shield_fx(center_pos: tuple[int, int]) -> None:
@@ -199,19 +240,81 @@ class Player(pygame.sprite.Sprite):
 
             surface.blit(halo, halo.get_rect(center=center_pos))
 
+        def draw_dash_trail(image: pygame.Surface, base_rect: pygame.Rect) -> None:
+            # Traînée du dash (afterimages)
+            if self.dash_time_remaining <= 0.0 or image is None:
+                return
+            for i in range(1, 4):
+                ghost = image.copy()
+                alpha = max(0, 80 - i * 20)
+                ghost.set_alpha(alpha)
+                offset_x = -self.dash_direction * i * 12
+                ghost_rect = base_rect.copy()
+                ghost_rect.x += offset_x
+                surface.blit(ghost, ghost_rect)
+
+        def draw_charge_fx(base_rect: pygame.Rect) -> None:
+            # Halo de charge devant le personnage + flash d'émission
+            # Position approximative des mains/avant du corps
+            center = base_rect.center
+            fx_pos = (center[0] + 18 * self.facing, center[1] - 10)
+            # Halo pendant la charge
+            if getattr(self, "charging", False):
+                ratio = 0.0 if self.CHARGE_MAX <= 0 else min(1.0, self.charge_time / self.CHARGE_MAX)
+                radius = 10 + int(14 * ratio)
+                alpha = 80 + int(120 * ratio)
+                col = (255, 180, 80, max(0, min(255, alpha)))
+                surf = pygame.Surface((radius * 2 + 8, radius * 2 + 8), pygame.SRCALPHA)
+                pygame.draw.circle(surf, col, (surf.get_width() // 2, surf.get_height() // 2), radius)
+                # Anneau externe léger
+                ring_col = (255, 210, 120, max(0, min(255, alpha - 40)))
+                pygame.draw.circle(surf, ring_col, (surf.get_width() // 2, surf.get_height() // 2), max(4, radius - 3), 2)
+                surface.blit(surf, surf.get_rect(center=fx_pos))
+            # Flash au relâchement
+            if getattr(self, "charge_flash_timer", 0.0) > 0.0:
+                t = self.charge_flash_timer / 0.15  # 1 -> 0
+                radius = int(20 + (1.0 - t) * 30)
+                alpha = int(180 * t)
+                col = (255, 220, 120, max(0, min(255, alpha)))
+                surf = pygame.Surface((radius * 2 + 8, radius * 2 + 8), pygame.SRCALPHA)
+                pygame.draw.circle(surf, col, (surf.get_width() // 2, surf.get_height() // 2), radius, 4)
+                surface.blit(surf, surf.get_rect(center=center))
+
         if self.animation is None:
             surface.blit(self.image, self.rect)
+            # Dash trail rudimentaire si dash actif
+            if self.dash_time_remaining > 0.0:
+                for i in range(1, 4):
+                    trail = pygame.Surface(self.image.get_size(), pygame.SRCALPHA)
+                    trail.fill((255, 255, 255, max(0, 60 - i * 15)))
+                    tr_rect = self.rect.copy()
+                    tr_rect.x += -self.dash_direction * i * 10
+                    surface.blit(trail, tr_rect)
             # FX bouclier si actif
             if getattr(self, "shielding", False) and getattr(self, "shield_durability", 0) > 0:
                 draw_shield_fx(self.rect.center)
+            # FX de charge
+            if getattr(self, "charging", False) or getattr(self, "charge_flash_timer", 0.0) > 0.0:
+                # approx. base rect sans anim
+                base_rect = self.rect
+                draw_charge_fx(base_rect)
             return
 
         visual = self.animation.image
         if self.facing < 0:
             visual = pygame.transform.flip(visual, True, False)
         sprite_rect = visual.get_rect(midbottom=self.rect.midbottom)
+
+        # Dash: dessiner la traînée derrière
+        draw_dash_trail(visual, sprite_rect)
+
+        # Sprite principal
         surface.blit(visual, sprite_rect)
 
         # FX bouclier si actif
         if getattr(self, "shielding", False) and getattr(self, "shield_durability", 0) > 0:
             draw_shield_fx(sprite_rect.center)
+
+        # FX de charge (pendant la charge et flash au tir)
+        if getattr(self, "charging", False) or getattr(self, "charge_flash_timer", 0.0) > 0.0:
+            draw_charge_fx(sprite_rect)

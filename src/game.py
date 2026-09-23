@@ -36,7 +36,7 @@ class Game:
                 {
                     "left": pygame.K_q,
                     "right": pygame.K_d,
-                    "jump": pygame.K_SPACE,
+                    "jump": pygame.K_z,
                     "attack": pygame.K_LSHIFT,
                     "shield": pygame.K_s,
                 },
