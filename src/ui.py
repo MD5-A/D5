@@ -21,8 +21,10 @@ class HUD:
     def draw(self, surface, players) -> None:
         self.draw_health_bar(surface, players[0], (20, 20))
         self.draw_health_bar(surface, players[1], (surface.get_width() - 240, 20), reverse=True)
-        label = self.font.render("Joueur 1        Joueur 2", True, (240, 240, 240))
-        surface.blit(label, label.get_rect(center=(surface.get_width() // 2, 28)))
+        player_one = self.font.render("Joueur 1", True, (240, 240, 240))
+        player_two = self.font.render("Joueur 2", True, (240, 240, 240))
+        surface.blit(player_one, (20, 43))
+        surface.blit(player_two, (surface.get_width() - 95, 43))
 
     def draw_menu(self, surface, title, description, subtitle) -> None:
         overlay = pygame.Surface(surface.get_size(), pygame.SRCALPHA)
@@ -35,3 +37,16 @@ class HUD:
         surface.blit(title_image, title_image.get_rect(center=(center_x, 190)))
         surface.blit(description_image, description_image.get_rect(center=(center_x, 255)))
         surface.blit(subtitle_image, subtitle_image.get_rect(center=(center_x, 320)))
+
+    def draw_game_over(self, surface, winner) -> None:
+        """Affiche le résultat de la manche et les actions disponibles."""
+        overlay = pygame.Surface(surface.get_size(), pygame.SRCALPHA)
+        overlay.fill((8, 10, 24, 185))
+        surface.blit(overlay, (0, 0))
+        center_x = surface.get_width() // 2
+        result = self.font.render(f"{winner} remporte la manche !", True, (255, 220, 110))
+        restart = self.font.render("Entrée ou Espace : revanche", True, (240, 243, 255))
+        menu = self.font.render("Échap : revenir au menu", True, (184, 194, 220))
+        surface.blit(result, result.get_rect(center=(center_x, 220)))
+        surface.blit(restart, restart.get_rect(center=(center_x, 285)))
+        surface.blit(menu, menu.get_rect(center=(center_x, 325)))

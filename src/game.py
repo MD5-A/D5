@@ -15,6 +15,7 @@ class Game:
 
     MENU = "menu"
     PLAYING = "playing"
+    GAME_OVER = "game_over"
 
     def __init__(self):
         pygame.init()
@@ -29,6 +30,7 @@ class Game:
 
     def reset_match(self) -> None:
         """Recrée les objets dépendant d'une manche."""
+        self.winner = None
         self.players = [
             Player(
                 (140, 300),
@@ -55,6 +57,12 @@ class Game:
                     self.state = self.PLAYING
                 elif self.state == self.PLAYING and event.key == pygame.K_ESCAPE:
                     self.state = self.MENU
+                elif self.state == self.GAME_OVER:
+                    if event.key in (pygame.K_RETURN, pygame.K_SPACE):
+                        self.reset_match()
+                        self.state = self.PLAYING
+                    elif event.key == pygame.K_ESCAPE:
+                        self.state = self.MENU
 
     def update(self, dt: float) -> None:
         if self.state != self.PLAYING:
@@ -73,6 +81,10 @@ class Game:
             if bullet.rect.colliderect(target.rect):
                 target.health = max(0, target.health - Bullet.DAMAGE)
                 bullet.kill()
+                if target.health == 0:
+                    self.winner = bullet.owner
+                    self.state = self.GAME_OVER
+                    break
 
     def draw(self) -> None:
         self.screen.fill(COLOR_BACKGROUND)
@@ -91,6 +103,9 @@ class Game:
                 player.draw(self.screen)
             self.bullets.draw(self.screen)
             self.hud.draw(self.screen, self.players)
+            if self.state == self.GAME_OVER:
+                winner_number = 1 if self.winner is self.players[0] else 2
+                self.hud.draw_game_over(self.screen, f"Joueur {winner_number}")
         pygame.display.flip()
 
     def run(self) -> None:
