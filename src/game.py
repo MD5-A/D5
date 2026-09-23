@@ -16,6 +16,7 @@ class Game:
     MENU = "menu"
     PLAYING = "playing"
     GAME_OVER = "game_over"
+    PLAYER_NAMES = ("Sam", "Emma")
 
     def __init__(self):
         pygame.init()
@@ -102,10 +103,10 @@ class Game:
             for player in self.players:
                 player.draw(self.screen)
             self.bullets.draw(self.screen)
-            self.hud.draw(self.screen, self.players)
+            self.hud.draw(self.screen, self.players, self.PLAYER_NAMES)
             if self.state == self.GAME_OVER:
                 winner_number = 1 if self.winner is self.players[0] else 2
-                self.hud.draw_game_over(self.screen, f"Joueur {winner_number}")
+                self.hud.draw_game_over(self.screen, self.PLAYER_NAMES[winner_number - 1])
         pygame.display.flip()
 
     def run(self) -> None:

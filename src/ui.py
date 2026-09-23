@@ -18,11 +18,11 @@ class HUD:
         pygame.draw.rect(surface, (90, 30, 30), background)
         pygame.draw.rect(surface, (50, 210, 80), health)
 
-    def draw(self, surface, players) -> None:
+    def draw(self, surface, players, player_names=("Sam", "Emma")) -> None:
         self.draw_health_bar(surface, players[0], (20, 20))
         self.draw_health_bar(surface, players[1], (surface.get_width() - 240, 20), reverse=True)
-        player_one = self.font.render("Joueur 1", True, (240, 240, 240))
-        player_two = self.font.render("Joueur 2", True, (240, 240, 240))
+        player_one = self.font.render(player_names[0], True, (240, 240, 240))
+        player_two = self.font.render(player_names[1], True, (240, 240, 240))
         surface.blit(player_one, (20, 43))
         surface.blit(player_two, (surface.get_width() - 95, 43))
 
