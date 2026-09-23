@@ -36,13 +36,25 @@ class Game:
             Player(
                 (140, 300),
                 (70, 150, 255),
-                {"left": pygame.K_q, "right": pygame.K_d, "jump": pygame.K_SPACE, "attack": pygame.K_e},
+                {
+                    "left": pygame.K_q,
+                    "right": pygame.K_d,
+                    "jump": pygame.K_z,
+                    "attack": pygame.K_LSHIFT,
+                    "shield": pygame.K_s,
+                },
                 load_character_animations("alchemist", "alchemist"),
             ),
             Player(
                 (780, 300),
                 (240, 80, 80),
-                {"left": pygame.K_LEFT, "right": pygame.K_RIGHT, "jump": pygame.K_UP, "attack": pygame.K_RETURN},
+                {
+                    "left": pygame.K_LEFT,
+                    "right": pygame.K_RIGHT,
+                    "jump": pygame.K_UP,
+                    "attack": pygame.K_RSHIFT,
+                    "shield": pygame.K_DOWN,
+                },
                 load_character_animations("arcane-mage", "arcane-mage"),
             ),
         ]
@@ -70,8 +82,18 @@ class Game:
             return
         keys = pygame.key.get_pressed()
         for player in self.players:
-            if player.handle_input(keys):
-                self.bullets.add(Bullet(player.rect.center, player.facing, player))
+            fired = player.handle_input(keys, dt)
+            if fired and fired.get("fired"):
+                self.bullets.add(
+                    Bullet(
+                        player.rect.center,
+                        player.facing,
+                        player,
+                        damage=fired["damage"],
+                        speed=fired["speed"],
+                        charged=fired["charged"],
+                    )
+                )
             self.world.apply_gravity(player)
             player.rect.clamp_ip(self.screen.get_rect())
             player.update_visual(dt)
@@ -80,12 +102,41 @@ class Game:
         for bullet in list(self.bullets):
             target = self.players[1] if bullet.owner is self.players[0] else self.players[0]
             if bullet.rect.colliderect(target.rect):
+<<<<<<< HEAD
                 target.health = max(0, target.health - Bullet.DAMAGE)
                 bullet.kill()
                 if target.health == 0:
                     self.winner = bullet.owner
                     self.state = self.GAME_OVER
                     break
+=======
+                # Gestion bouclier: parade (renvoi) ou blocage simple
+                if getattr(target, "shielding", False) and getattr(target, "shield_durability", 0) > 0:
+                    if target.shield_active_for <= Player.PARRY_WINDOW:
+                        # Parade: renvoi du projectile + flash visuel
+                        target.shield_durability = max(0, target.shield_durability - Player.SHIELD_WEAR_PARRY)
+                        # Déclenche un petit flash visuel côté défenseur
+                        if hasattr(target, "parry_flash_timer"):
+                            target.parry_flash_timer = 0.12
+                        bullet.owner = target
+                        bullet.direction *= -1
+                        # Décaler légèrement pour éviter collision immédiate
+                        bullet.rect.x += bullet.direction * 8
+                    else:
+                        # Blocage: le projectile est annulé, usure du bouclier
+                        target.shield_durability = max(0, target.shield_durability - Player.SHIELD_WEAR_BLOCK)
+                        bullet.kill()
+                else:
+                    # Pas de bouclier (ou cassé): dégâts à la santé
+                    target.health = max(0, target.health - int(getattr(bullet, "damage", 10)))
+                    # Recharge légère du bouclier de l'attaquant sur coup réussi
+                    owner = bullet.owner
+                    if hasattr(owner, "shield_durability"):
+                        owner.shield_durability = min(
+                            owner.SHIELD_MAX, owner.shield_durability + Player.SHIELD_RECHARGE_ON_HIT
+                        )
+                    bullet.kill()
+>>>>>>> origin/dev4
 
     def draw(self) -> None:
         self.screen.fill(COLOR_BACKGROUND)
