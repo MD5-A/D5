@@ -37,6 +37,16 @@ class SpriteAnimation:
     def image(self) -> pygame.Surface:
         return self.frames[self.index]
 
+    def clone(self) -> "SpriteAnimation":
+        """Crée une animation indépendante sans recharger les images."""
+        animation = object.__new__(SpriteAnimation)
+        animation.sheet = self.sheet
+        animation.frames = self.frames
+        animation.index = 0
+        animation.elapsed = 0.0
+        animation.frame_duration = self.frame_duration
+        return animation
+
     def update(self, dt: float) -> None:
         if len(self.frames) < 2:
             return
@@ -50,7 +60,7 @@ def load_character_animations(folder_name: str, character_name: str) -> dict[str
     """Charge les animations disponibles pour un personnage."""
     folder = Path(__file__).resolve().parent.parent / "assets" / folder_name
     animations = {}
-    for animation_name in ("idle", "run", "walk"):
+    for animation_name in ("idle", "run", "walk", "dance"):
         image_path = folder / f"{character_name}-{animation_name}.png"
         data_path = folder / f"{character_name}-{animation_name}.json"
         if image_path.exists() and data_path.exists():
