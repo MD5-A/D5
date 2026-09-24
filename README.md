@@ -54,10 +54,18 @@ La fenêtre du jeu s’appelle `D5` et utilise actuellement une résolution de
 
 - Le menu est affiché au démarrage.
 - Le menu présente Sam et Emma avec leurs contrôles.
+- Les boutons `JOUER`, `COMMANDES` et `QUITTER` sont disponibles dans le menu.
+- Les flèches gauche/droite (ou haut/bas) déplacent la surbrillance entre les
+  boutons ; `Entrée` ou `Espace` valide le bouton sélectionné. La souris reste
+  également prise en charge.
+- L’écran `COMMANDES` détaille les touches de Sam et Emma ; `Échap` revient
+  au menu.
 - `Entrée` ou `Espace` lance une manche.
 - Un background de `assets/bg/` est choisi aléatoirement au début de chaque
   manche.
-- `Échap` met la partie en pause ; `Échap` à nouveau reprend la partie.
+- `Échap` met la partie en pause ; l'écran de pause propose `REPRENDRE`,
+  `RECOMMENCER` et `MENU`, sélectionnables avec les flèches puis `Entrée`.
+  `Échap` reprend directement la partie.
 - Quand un joueur n’a plus de points de vie, l’écran de victoire apparaît.
 - L’état `VICTORY` annonce d’abord le résultat ; une touche permet de passer
   manuellement à l’écran final `GAME_OVER`.
@@ -65,6 +73,9 @@ La fenêtre du jeu s’appelle `D5` et utilise actuellement une résolution de
   `VICTOIRE PARFAITE !`.
 - Après l’appui, `game_over.ogg` est joué et les détails du gagnant, des HP
   restants et du caractère parfait de la victoire sont affichés.
+- L’écran final présente le gagnant à gauche et les statistiques à droite dans
+  un tableau à deux colonnes.
+- Les transitions entre les écrans utilisent un fondu progressif.
 - L’écran de victoire affiche le personnage gagnant et son animation dédiée
   lorsqu’elle est disponible.
 - `Entrée` ou `Espace` permet de recommencer une manche.
