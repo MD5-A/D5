@@ -85,10 +85,10 @@ La fenêtre du jeu s’appelle `D5` et utilise actuellement une résolution de
 
 | Action | Sam — Joueur 1 | Emma — Joueur 2 |
 |---|---|---|
-| Déplacement gauche/droite | `Q` / `D` | `←` / `→` |
-| Saut / double saut | `Z` | `↑` |
+| Déplacement gauche/droite | `Q` / `D` | `gauche` / `droite` |
+| Saut / double saut | `Z` | `haut` |
 | Attaque chargée | maintenir `Shift gauche`, puis relâcher | maintenir `Shift droit`, puis relâcher |
-| Bouclier | `S` | `↓` |
+| Bouclier | `S` | `bas` |
 
 Le HUD affiche les noms, les HP numériques, la barre de vie, la durabilité du
 bouclier et la progression de charge du tir.

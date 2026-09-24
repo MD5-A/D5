@@ -172,7 +172,7 @@ class HUD:
         surface.blit(description_image, description_image.get_rect(center=(center_x, 100)))
 
         if previews:
-            cards = ((35, "Sam", "Q/D   Z   Shift gauche   S"), (605, "Emma", "←/→   ↑   Shift droit   ↓"))
+            cards = ((35, "Sam", "Q/D   Z   Shift gauche   S"), (605, "Emma", "gauche/droite   haut   Shift droit   bas"))
             for x, name, controls in cards:
                 card = pygame.Rect(x, 125, 320, 215)
                 pygame.draw.rect(surface, (26, 35, 63, 220), card, border_radius=12)
@@ -197,7 +197,7 @@ class HUD:
             text = self.font.render(label, True, (240, 243, 255))
             surface.blit(text, text.get_rect(center=button.center))
             if highlighted:
-                marker = self.font.render("▶", True, (255, 220, 110))
+                marker = self.font.render(">", True, (255, 220, 110))
                 surface.blit(marker, marker.get_rect(midright=(button.left - 10, button.centery)))
         subtitle_image = self.font.render(subtitle, True, (184, 194, 220))
         surface.blit(subtitle_image, subtitle_image.get_rect(center=(center_x, 475)))
@@ -212,7 +212,7 @@ class HUD:
         surface.blit(title, title.get_rect(center=(center_x, 80)))
         rows = (
             ("Sam", "Q/D : bouger   Z : sauter   Shift gauche : tirer   S : bouclier"),
-            ("Emma", "←/→ : bouger   ↑ : sauter   Shift droit : tirer   ↓ : bouclier"),
+            ("Emma", "gauche/droite : bouger   haut : sauter   Shift droit : tirer   bas : bouclier"),
         )
         for index, (name, controls) in enumerate(rows):
             y = 190 + index * 100
@@ -246,7 +246,7 @@ class HUD:
             text = self.font.render(label, True, (240, 243, 255))
             surface.blit(text, text.get_rect(center=button.center))
             if highlighted:
-                marker = self.font.render("▶", True, (255, 220, 110))
+                marker = self.font.render(">", True, (255, 220, 110))
                 surface.blit(marker, marker.get_rect(midright=(button.left - 10, button.centery)))
 
     def draw_victory(self, surface, winner, flawless, victory_animation=None, flash_remaining=0.0) -> None:
@@ -310,7 +310,7 @@ class HUD:
             f"Dégâts infligés : {stats['damage']}   Blocages : {stats['blocks']}"
         )
         if flawless:
-            badge = pygame.Rect(210, 345, 180, 34)
+            badge = pygame.Rect(510, 135, 250, 34)
             pygame.draw.rect(surface, (170, 120, 35), badge, border_radius=10)
             badge_text = self.font.render("VICTOIRE PARFAITE", True, (255, 245, 190))
             surface.blit(badge_text, badge_text.get_rect(center=badge.center))
