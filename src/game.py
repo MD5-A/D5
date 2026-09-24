@@ -16,6 +16,7 @@ class Game:
     """Orchestre le menu, la partie et les composants du jeu."""
 
     MENU = "menu"
+    CONTROLS = "controls"
     PLAYING = "playing"
     PAUSED = "paused"
     VICTORY = "victory"
@@ -44,10 +45,15 @@ class Game:
         self.background_name = None
         self.victory_animation = None
         self.impact_effects = []
+        self.shield_break_effects = []
         self.player_was_hit = [False, False]
         self.flawless_victory = False
         self.victory_flash_remaining = 0.0
+        self.match_stats = []
+        self.fade_alpha = 0
         self.state = self.MENU
+        self.menu_selection = 0
+        self.pause_selection = 0
         self.running = True
         self.world = World(*SCREEN_SIZE)
         self.reset_match()
@@ -105,9 +111,14 @@ class Game:
         self.winner = None
         self.victory_animation = None
         self.impact_effects = []
+        self.shield_break_effects = []
         self.player_was_hit = [False, False]
         self.flawless_victory = False
         self.victory_flash_remaining = 0.0
+        self.match_stats = [
+            {"shots": 0, "hits": 0, "damage": 0, "blocks": 0},
+            {"shots": 0, "hits": 0, "damage": 0, "blocks": 0},
+        ]
         if self.audio_channel is not None:
             self.audio_channel.stop()
             self.audio_channel = None
@@ -141,6 +152,37 @@ class Game:
         ]
         self.bullets = pygame.sprite.Group()
 
+    def _change_state(self, state: str) -> None:
+        """Change d'écran avec un fondu court."""
+        self.state = state
+        self.fade_alpha = 255
+        if state == self.MENU:
+            self.menu_selection = 0
+        elif state == self.PAUSED:
+            self.pause_selection = 0
+
+    @staticmethod
+    def _move_selection(selection: int, delta: int, count: int) -> int:
+        return (selection + delta) % count
+
+    def _activate_menu_selection(self) -> None:
+        if self.menu_selection == 0:
+            self.reset_match()
+            self._change_state(self.PLAYING)
+        elif self.menu_selection == 1:
+            self._change_state(self.CONTROLS)
+        else:
+            self.running = False
+
+    def _activate_pause_selection(self) -> None:
+        if self.pause_selection == 0:
+            self._change_state(self.PLAYING)
+        elif self.pause_selection == 1:
+            self.reset_match()
+            self._change_state(self.PLAYING)
+        else:
+            self._change_state(self.MENU)
+
     def _clone_character_animations(self, name: str) -> dict:
         """Retourne des animations indépendantes à partir du cache mémoire."""
         return {key: animation.clone() for key, animation in self.character_animations[name].items()}
@@ -155,29 +197,69 @@ class Game:
         self.impact_effects = [
             impact for impact in self.impact_effects if impact["age"] < impact["duration"]
         ]
+        for effect in self.shield_break_effects:
+            effect["age"] += dt
+        self.shield_break_effects = [
+            effect for effect in self.shield_break_effects if effect["age"] < effect["duration"]
+        ]
 
     def handle_events(self) -> None:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.running = False
+            elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                if self.state == self.MENU:
+                    buttons = self.hud.menu_button_rects(self.screen)
+                    if buttons["play"].collidepoint(event.pos):
+                        self.menu_selection = 0
+                        self._activate_menu_selection()
+                    elif buttons["controls"].collidepoint(event.pos):
+                        self.menu_selection = 1
+                        self._activate_menu_selection()
+                    elif buttons["quit"].collidepoint(event.pos):
+                        self.menu_selection = 2
+                        self._activate_menu_selection()
+                elif self.state == self.PAUSED:
+                    buttons = self.hud.pause_button_rects(self.screen)
+                    for index, key in enumerate(("resume", "restart", "menu")):
+                        if buttons[key].collidepoint(event.pos):
+                            self.pause_selection = index
+                            self._activate_pause_selection()
+                            break
             elif event.type == pygame.KEYDOWN:
-                if self.state == self.MENU and event.key in (pygame.K_RETURN, pygame.K_SPACE):
-                    self.reset_match()
-                    self.state = self.PLAYING
+                if self.state == self.MENU and event.key in (pygame.K_LEFT, pygame.K_UP):
+                    self.menu_selection = self._move_selection(self.menu_selection, -1, 3)
+                elif self.state == self.MENU and event.key in (pygame.K_RIGHT, pygame.K_DOWN):
+                    self.menu_selection = self._move_selection(self.menu_selection, 1, 3)
+                elif self.state == self.MENU and event.key in (pygame.K_RETURN, pygame.K_SPACE):
+                    self._activate_menu_selection()
+                elif self.state == self.MENU and event.key == pygame.K_c:
+                    self._change_state(self.CONTROLS)
+                elif self.state == self.MENU and event.key == pygame.K_q:
+                    self.running = False
+                elif self.state == self.CONTROLS and event.key == pygame.K_ESCAPE:
+                    self._change_state(self.MENU)
                 elif self.state == self.PLAYING and event.key == pygame.K_ESCAPE:
-                    self.state = self.PAUSED
+                    self._change_state(self.PAUSED)
+                elif self.state == self.PAUSED and event.key in (pygame.K_LEFT, pygame.K_UP):
+                    self.pause_selection = self._move_selection(self.pause_selection, -1, 3)
+                elif self.state == self.PAUSED and event.key in (pygame.K_RIGHT, pygame.K_DOWN):
+                    self.pause_selection = self._move_selection(self.pause_selection, 1, 3)
+                elif self.state == self.PAUSED and event.key in (pygame.K_RETURN, pygame.K_SPACE):
+                    self._activate_pause_selection()
                 elif self.state == self.PAUSED and event.key == pygame.K_ESCAPE:
-                    self.state = self.PLAYING
+                    self._change_state(self.PLAYING)
                 elif self.state == self.VICTORY:
                     self._finish_victory()
                 elif self.state == self.GAME_OVER:
                     if event.key in (pygame.K_RETURN, pygame.K_SPACE):
                         self.reset_match()
-                        self.state = self.PLAYING
+                        self._change_state(self.PLAYING)
                     elif event.key == pygame.K_ESCAPE:
-                        self.state = self.MENU
+                        self._change_state(self.MENU)
 
     def update(self, dt: float) -> None:
+        self.fade_alpha = max(0, self.fade_alpha - int(720 * dt))
         self.hud.update(dt)
         for animation in self.menu_animations.values():
             animation.update(dt)
@@ -206,6 +288,8 @@ class Game:
                         charged=fired["charged"],
                     )
                 )
+                shooter_index = 0 if player is self.players[0] else 1
+                self.match_stats[shooter_index]["shots"] += 1
             self.world.apply_gravity(player)
             player.rect.clamp_ip(self.screen.get_rect())
             player.update_visual(dt)
@@ -217,6 +301,7 @@ class Game:
             if bullet.rect.colliderect(target.rect):
                 # Un contact avec un projectile compte même si le bouclier bloque.
                 self.player_was_hit[target_index] = True
+                self.match_stats[target_index]["hits"] += 1
                 # Gestion bouclier: parade (renvoi) ou blocage simple
                 if getattr(target, "shielding", False) and getattr(target, "shield_durability", 0) > 0:
                     if target.shield_active_for <= Player.PARRY_WINDOW:
@@ -232,12 +317,20 @@ class Game:
                         bullet.rect.x += bullet.direction * 8
                     else:
                         # Blocage: le projectile est annulé, usure du bouclier
+                        previous_durability = target.shield_durability
                         target.shield_durability = max(0, target.shield_durability - Player.SHIELD_WEAR_BLOCK)
+                        self.match_stats[target_index]["blocks"] += 1
                         self._add_impact(target.rect.center, (80, 170, 255))
+                        if previous_durability > 0 and target.shield_durability == 0:
+                            self.shield_break_effects.append(
+                                {"position": target.rect.center, "age": 0.0, "duration": 0.55}
+                            )
                         bullet.kill()
                 else:
                     # Pas de bouclier (ou cassé): dégâts à la santé
-                    target.health = max(0, target.health - int(getattr(bullet, "damage", 10)))
+                    damage = int(getattr(bullet, "damage", 10))
+                    target.health = max(0, target.health - damage)
+                    self.match_stats[target_index]["damage"] += damage
                     # Recharge légère du bouclier de l'attaquant sur coup réussi
                     owner = bullet.owner
                     if hasattr(owner, "shield_durability"):
@@ -255,14 +348,14 @@ class Game:
                         winner_index = 0 if self.winner is self.players[0] else 1
                         self.flawless_victory = not self.player_was_hit[winner_index]
                         self.victory_flash_remaining = 0.35
-                        self.state = self.VICTORY
+                        self._change_state(self.VICTORY)
                         if self.flawless_victory:
                             self._play_sound("flawless_victory")
                         break
 
     def _finish_victory(self) -> None:
         """Passe à l'écran final après l'appui du joueur."""
-        self.state = self.GAME_OVER
+        self._change_state(self.GAME_OVER)
         self._play_sound("game_over")
 
     def draw(self) -> None:
@@ -276,7 +369,13 @@ class Game:
                 "Un jeu de combat PvP en arène pour deux joueurs.",
                 "Entrée ou Espace pour commencer",
                 self.menu_animations,
+                ("play", "controls", "quit")[self.menu_selection],
             )
+        elif self.state == self.CONTROLS:
+            self.screen.fill(COLOR_BACKGROUND)
+            pygame.draw.circle(self.screen, (38, 48, 83), (self.screen.get_width() - 120, 120), 90)
+            pygame.draw.circle(self.screen, (25, 32, 59), (100, 430), 150)
+            self.hud.draw_controls(self.screen)
         else:
             if self.background is not None:
                 self.screen.blit(self.background, (0, 0))
@@ -285,12 +384,13 @@ class Game:
             self.world.draw(self.screen)
             for player in self.players:
                 player.draw(self.screen)
+            self.hud.draw_shield_break_effects(self.screen, self.shield_break_effects)
             self.hud.draw_projectile_effects(self.screen, self.bullets)
             self.bullets.draw(self.screen)
             self.hud.draw_impacts(self.screen, self.impact_effects)
             self.hud.draw(self.screen, self.players, self.PLAYER_NAMES)
             if self.state == self.PAUSED:
-                self.hud.draw_pause(self.screen)
+                self.hud.draw_pause(self.screen, ("resume", "restart", "menu")[self.pause_selection])
             elif self.state == self.VICTORY:
                 winner_index = 0 if self.winner is self.players[0] else 1
                 self.hud.draw_victory(
@@ -308,7 +408,12 @@ class Game:
                     self.victory_animation,
                     self.flawless_victory,
                     self.winner.health if self.winner is not None else 0,
+                    self.match_stats[winner_index] if self.winner is not None else None,
                 )
+        if self.fade_alpha > 0:
+            fade = pygame.Surface(self.screen.get_size(), pygame.SRCALPHA)
+            fade.fill((0, 0, 0, self.fade_alpha))
+            self.screen.blit(fade, (0, 0))
         pygame.display.flip()
 
     def run(self) -> None:
