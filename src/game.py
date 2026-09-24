@@ -18,6 +18,7 @@ class Game:
     MENU = "menu"
     PLAYING = "playing"
     PAUSED = "paused"
+    VICTORY = "victory"
     GAME_OVER = "game_over"
     PLAYER_NAMES = ("Sam", "Emma")
 
@@ -26,6 +27,8 @@ class Game:
         self.screen = pygame.display.set_mode(SCREEN_SIZE)
         pygame.display.set_caption("D5")
         self.clock = pygame.time.Clock()
+        self.sounds = self._load_sounds()
+        self.audio_channel = None
         self.hud = HUD(pygame.font.Font(None, 26), pygame.font.Font(None, 42))
         self.character_animations = {
             "Sam": load_character_animations("alchemist", "alchemist"),
@@ -41,10 +44,41 @@ class Game:
         self.background_name = None
         self.victory_animation = None
         self.impact_effects = []
+        self.player_was_hit = [False, False]
+        self.flawless_victory = False
+        self.victory_remaining = 0.0
         self.state = self.MENU
         self.running = True
         self.world = World(*SCREEN_SIZE)
         self.reset_match()
+
+    def _load_sounds(self) -> dict[str, pygame.mixer.Sound]:
+        """Charge les effets audio une seule fois, avec un fallback silencieux."""
+        try:
+            if pygame.mixer.get_init() is None:
+                pygame.mixer.init()
+        except pygame.error:
+            return {}
+
+        sounds = {}
+        for name in ("flawless_victory", "game_over"):
+            path = ASSETS_DIR / "sounds" / f"{name}.ogg"
+            if path.exists():
+                try:
+                    sounds[name] = pygame.mixer.Sound(str(path))
+                except pygame.error:
+                    continue
+        return sounds
+
+    def _play_sound(self, name: str) -> float:
+        """Joue un effet et retourne sa durée, ou une durée de fallback."""
+        if self.audio_channel is not None:
+            self.audio_channel.stop()
+        sound = self.sounds.get(name)
+        if sound is None:
+            return 1.5
+        self.audio_channel = sound.play()
+        return max(0.1, sound.get_length())
 
     def _load_backgrounds(self) -> list[tuple[str, pygame.Surface]]:
         """Charge et adapte les backgrounds disponibles pour l'arène."""
@@ -71,6 +105,12 @@ class Game:
         self.winner = None
         self.victory_animation = None
         self.impact_effects = []
+        self.player_was_hit = [False, False]
+        self.flawless_victory = False
+        self.victory_remaining = 0.0
+        if self.audio_channel is not None:
+            self.audio_channel.stop()
+            self.audio_channel = None
         if self.backgrounds:
             self.background_name, self.background = random.choice(self.backgrounds)
         self.players = [
@@ -128,6 +168,8 @@ class Game:
                     self.state = self.PAUSED
                 elif self.state == self.PAUSED and event.key == pygame.K_ESCAPE:
                     self.state = self.PLAYING
+                elif self.state == self.VICTORY and event.key == pygame.K_ESCAPE:
+                    self.state = self.MENU
                 elif self.state == self.GAME_OVER:
                     if event.key in (pygame.K_RETURN, pygame.K_SPACE):
                         self.reset_match()
@@ -140,10 +182,15 @@ class Game:
         for animation in self.menu_animations.values():
             animation.update(dt)
 
-        if self.state == self.GAME_OVER:
+        if self.state in (self.VICTORY, self.GAME_OVER):
             if self.victory_animation is not None:
                 self.victory_animation.update(dt)
             self._update_impacts(dt)
+            if self.state == self.VICTORY:
+                self.victory_remaining -= dt
+                if self.victory_remaining <= 0.0:
+                    self.state = self.GAME_OVER
+                    self._play_sound("game_over")
             return
         if self.state != self.PLAYING:
             return
@@ -168,8 +215,11 @@ class Game:
 
         self.bullets.update(self.screen)
         for bullet in list(self.bullets):
-            target = self.players[1] if bullet.owner is self.players[0] else self.players[0]
+            target_index = 1 if bullet.owner is self.players[0] else 0
+            target = self.players[target_index]
             if bullet.rect.colliderect(target.rect):
+                # Un contact avec un projectile compte même si le bouclier bloque.
+                self.player_was_hit[target_index] = True
                 # Gestion bouclier: parade (renvoi) ou blocage simple
                 if getattr(target, "shielding", False) and getattr(target, "shield_durability", 0) > 0:
                     if target.shield_active_for <= Player.PARRY_WINDOW:
@@ -205,7 +255,14 @@ class Game:
                         animations = self.character_animations[winner_name]
                         victory_source = animations.get("dance", animations.get("idle"))
                         self.victory_animation = victory_source.clone() if victory_source else None
-                        self.state = self.GAME_OVER
+                        winner_index = 0 if self.winner is self.players[0] else 1
+                        self.flawless_victory = not self.player_was_hit[winner_index]
+                        self.state = self.VICTORY
+                        self.victory_remaining = (
+                            self._play_sound("flawless_victory")
+                            if self.flawless_victory
+                            else 1.2
+                        )
                         break
 
     def draw(self) -> None:
@@ -234,12 +291,22 @@ class Game:
             self.hud.draw(self.screen, self.players, self.PLAYER_NAMES)
             if self.state == self.PAUSED:
                 self.hud.draw_pause(self.screen)
+            elif self.state == self.VICTORY:
+                winner_index = 0 if self.winner is self.players[0] else 1
+                self.hud.draw_victory(
+                    self.screen,
+                    self.PLAYER_NAMES[winner_index],
+                    self.flawless_victory,
+                    self.victory_animation,
+                )
             elif self.state == self.GAME_OVER:
                 winner_index = 0 if self.winner is self.players[0] else 1
                 self.hud.draw_game_over(
                     self.screen,
                     self.PLAYER_NAMES[winner_index],
                     self.victory_animation,
+                    self.flawless_victory,
+                    self.winner.health if self.winner is not None else 0,
                 )
         pygame.display.flip()
 

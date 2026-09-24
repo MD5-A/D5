@@ -59,6 +59,11 @@ La fenêtre du jeu s’appelle `D5` et utilise actuellement une résolution de
   manche.
 - `Échap` met la partie en pause ; `Échap` à nouveau reprend la partie.
 - Quand un joueur n’a plus de points de vie, l’écran de victoire apparaît.
+- L’état `VICTORY` annonce d’abord le résultat avant l’écran final `GAME_OVER`.
+- Une victoire sans aucun contact reçu joue `flawless_victory.ogg` et affiche
+  `VICTOIRE PARFAITE !`.
+- La fin de chaque manche joue ensuite `game_over.ogg` et affiche les détails
+  du gagnant, des HP restants et du caractère parfait de la victoire.
 - L’écran de victoire affiche le personnage gagnant et son animation dédiée
   lorsqu’elle est disponible.
 - `Entrée` ou `Espace` permet de recommencer une manche.
@@ -195,7 +200,8 @@ dans `src/game.py`, après validation du Dev 1.
 ├── assets/
 │   ├── alchemist/          # Sprites de Sam (Dev 5)
 │   ├── arcane-mage/        # Sprites d’Emma (Dev 5)
-│   └── bg/                 # Backgrounds de l’arène (Dev 5)
+│   ├── bg/                 # Backgrounds de l’arène (Dev 5)
+│   └── sounds/             # Sons de victoire et de fin (Dev 5)
 ├── src/
 │   ├── main.py             # Point d’entrée (Dev 1)
 │   ├── game.py             # Boucle, états et intégration (Dev 1)

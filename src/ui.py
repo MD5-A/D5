@@ -130,8 +130,8 @@ class HUD:
         surface.blit(title, title.get_rect(center=(center[0], center[1] - 35)))
         surface.blit(instruction, instruction.get_rect(center=(center[0], center[1] + 30)))
 
-    def draw_game_over(self, surface, winner, victory_animation=None) -> None:
-        """Affiche le résultat avec une animation du gagnant si disponible."""
+    def draw_victory(self, surface, winner, flawless, victory_animation=None) -> None:
+        """Affiche l'annonce de victoire avant l'écran final."""
         overlay = pygame.Surface(surface.get_size(), pygame.SRCALPHA)
         overlay.fill((8, 10, 24, 195))
         surface.blit(overlay, (0, 0))
@@ -139,9 +139,36 @@ class HUD:
         if victory_animation is not None:
             image = victory_animation.image
             surface.blit(image, image.get_rect(center=(center_x, 170)))
-        result = self.title_font.render(f"{winner} remporte la manche !", True, (255, 220, 110))
+        title = "VICTOIRE PARFAITE !" if flawless else "VICTOIRE !"
+        message = (
+            f"{winner} gagne sans avoir été touché."
+            if flawless
+            else f"{winner} remporte la manche."
+        )
+        title_image = self.title_font.render(title, True, (255, 220, 110))
+        message_image = self.font.render(message, True, (240, 243, 255))
+        next_image = self.font.render("Résultat final en préparation...", True, (184, 194, 220))
+        surface.blit(title_image, title_image.get_rect(center=(center_x, 275)))
+        surface.blit(message_image, message_image.get_rect(center=(center_x, 325)))
+        surface.blit(next_image, next_image.get_rect(center=(center_x, 365)))
+
+    def draw_game_over(self, surface, winner, victory_animation=None, flawless=False, remaining_hp=0) -> None:
+        """Affiche l'écran final et les détails de la manche."""
+        overlay = pygame.Surface(surface.get_size(), pygame.SRCALPHA)
+        overlay.fill((8, 10, 24, 205))
+        surface.blit(overlay, (0, 0))
+        center_x = surface.get_width() // 2
+        if victory_animation is not None:
+            image = victory_animation.image
+            surface.blit(image, image.get_rect(center=(center_x, 135)))
+        title = self.title_font.render("FIN DE LA PARTIE", True, (255, 220, 110))
+        result = self.font.render(f"Vainqueur : {winner}", True, (240, 243, 255))
+        status = "Victoire parfaite : oui" if flawless else "Victoire parfaite : non"
+        details = self.font.render(f"{status}  |  HP restants : {remaining_hp}", True, (210, 218, 240))
         restart = self.font.render("Entrée ou Espace : revanche", True, (240, 243, 255))
         menu = self.font.render("Échap : revenir au menu", True, (184, 194, 220))
-        surface.blit(result, result.get_rect(center=(center_x, 275)))
-        surface.blit(restart, restart.get_rect(center=(center_x, 335)))
-        surface.blit(menu, menu.get_rect(center=(center_x, 370)))
+        surface.blit(title, title.get_rect(center=(center_x, 235)))
+        surface.blit(result, result.get_rect(center=(center_x, 285)))
+        surface.blit(details, details.get_rect(center=(center_x, 320)))
+        surface.blit(restart, restart.get_rect(center=(center_x, 370)))
+        surface.blit(menu, menu.get_rect(center=(center_x, 405)))
