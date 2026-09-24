@@ -42,3 +42,6 @@ temporaire/
 /notes/developpeur5.local.md
 src/__pycache__/game.cpython-314.pyc
 src/__pycache__/ui.cpython-314.pyc
+src/__pycache__/world.cpython-314.pyc
+src/__pycache__/combat.cpython-314.pyc
+src/__pycache__/player.cpython-314.pyc
