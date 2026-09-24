@@ -239,11 +239,14 @@ demandée. Le Dev 1 vérifie et teste la branche avant la fusion.
 Pour mettre sa branche à jour après une fusion dans `main` :
 
 ```bash
-git switch main
-git pull origin main
-git switch feature/nom-de-la-tache
-git merge main
+git fetch origin
+git switch "nom-de-la-branche"
+git merge origin/main
+git push origin "nom-de-la-branche"
 ```
+
+Remplacer `"nom-de-la-branche"` par le nom réel de sa branche, par exemple
+`dev1_5` ou `dev4`.
 
 Ne jamais valider des marqueurs de conflit comme `<<<<<<<`, `=======` ou
 `>>>>>>>`. Avant une Pull Request, vérifier :
