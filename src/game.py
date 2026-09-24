@@ -1,11 +1,13 @@
 """Boucle principale et états du jeu."""
 
+import random
+
 import pygame
 
 from .assets import load_character_animations
 from .combat import Bullet
 from .player import Player
-from .settings import COLOR_BACKGROUND, FPS, SCREEN_SIZE
+from .settings import ASSETS_DIR, COLOR_BACKGROUND, FPS, SCREEN_SIZE
 from .ui import HUD
 from .world import World
 
@@ -24,14 +26,39 @@ class Game:
         pygame.display.set_caption("D5")
         self.clock = pygame.time.Clock()
         self.hud = HUD(pygame.font.Font(None, 26))
+        self.backgrounds = self._load_backgrounds()
+        self.background = None
+        self.background_name = None
         self.state = self.MENU
         self.running = True
         self.world = World(*SCREEN_SIZE)
         self.reset_match()
 
+    def _load_backgrounds(self) -> list[tuple[str, pygame.Surface]]:
+        """Charge et adapte les backgrounds disponibles pour l'arène."""
+        backgrounds = []
+        background_dir = ASSETS_DIR / "bg"
+        for path in sorted(background_dir.glob("*.png")):
+            image = pygame.image.load(str(path)).convert()
+            scale = max(
+                SCREEN_SIZE[0] / image.get_width(),
+                SCREEN_SIZE[1] / image.get_height(),
+            )
+            scaled_size = (
+                round(image.get_width() * scale),
+                round(image.get_height() * scale),
+            )
+            scaled = pygame.transform.smoothscale(image, scaled_size)
+            crop_rect = pygame.Rect(0, 0, *SCREEN_SIZE)
+            crop_rect.center = scaled.get_rect().center
+            backgrounds.append((path.stem, scaled.subsurface(crop_rect).copy()))
+        return backgrounds
+
     def reset_match(self) -> None:
         """Recrée les objets dépendant d'une manche."""
         self.winner = None
+        if self.backgrounds:
+            self.background_name, self.background = random.choice(self.backgrounds)
         self.players = [
             Player(
                 (140, 300),
@@ -134,10 +161,10 @@ class Game:
                         break
 
     def draw(self) -> None:
-        self.screen.fill(COLOR_BACKGROUND)
-        pygame.draw.circle(self.screen, (38, 48, 83), (self.screen.get_width() - 120, 120), 90)
-        pygame.draw.circle(self.screen, (25, 32, 59), (100, 430), 150)
         if self.state == self.MENU:
+            self.screen.fill(COLOR_BACKGROUND)
+            pygame.draw.circle(self.screen, (38, 48, 83), (self.screen.get_width() - 120, 120), 90)
+            pygame.draw.circle(self.screen, (25, 32, 59), (100, 430), 150)
             self.hud.draw_menu(
                 self.screen,
                 "D5",
@@ -145,6 +172,10 @@ class Game:
                 "Entrée ou Espace pour commencer",
             )
         else:
+            if self.background is not None:
+                self.screen.blit(self.background, (0, 0))
+            else:
+                self.screen.fill(COLOR_BACKGROUND)
             self.world.draw(self.screen)
             for player in self.players:
                 player.draw(self.screen)
