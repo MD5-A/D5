@@ -59,11 +59,12 @@ La fenêtre du jeu s’appelle `D5` et utilise actuellement une résolution de
   manche.
 - `Échap` met la partie en pause ; `Échap` à nouveau reprend la partie.
 - Quand un joueur n’a plus de points de vie, l’écran de victoire apparaît.
-- L’état `VICTORY` annonce d’abord le résultat avant l’écran final `GAME_OVER`.
+- L’état `VICTORY` annonce d’abord le résultat ; une touche permet de passer
+  manuellement à l’écran final `GAME_OVER`.
 - Une victoire sans aucun contact reçu joue `flawless_victory.ogg` et affiche
   `VICTOIRE PARFAITE !`.
-- La fin de chaque manche joue ensuite `game_over.ogg` et affiche les détails
-  du gagnant, des HP restants et du caractère parfait de la victoire.
+- Après l’appui, `game_over.ogg` est joué et les détails du gagnant, des HP
+  restants et du caractère parfait de la victoire sont affichés.
 - L’écran de victoire affiche le personnage gagnant et son animation dédiée
   lorsqu’elle est disponible.
 - `Entrée` ou `Espace` permet de recommencer une manche.

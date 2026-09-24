@@ -46,7 +46,7 @@ class Game:
         self.impact_effects = []
         self.player_was_hit = [False, False]
         self.flawless_victory = False
-        self.victory_remaining = 0.0
+        self.victory_flash_remaining = 0.0
         self.state = self.MENU
         self.running = True
         self.world = World(*SCREEN_SIZE)
@@ -107,7 +107,7 @@ class Game:
         self.impact_effects = []
         self.player_was_hit = [False, False]
         self.flawless_victory = False
-        self.victory_remaining = 0.0
+        self.victory_flash_remaining = 0.0
         if self.audio_channel is not None:
             self.audio_channel.stop()
             self.audio_channel = None
@@ -168,8 +168,8 @@ class Game:
                     self.state = self.PAUSED
                 elif self.state == self.PAUSED and event.key == pygame.K_ESCAPE:
                     self.state = self.PLAYING
-                elif self.state == self.VICTORY and event.key == pygame.K_ESCAPE:
-                    self.state = self.MENU
+                elif self.state == self.VICTORY:
+                    self._finish_victory()
                 elif self.state == self.GAME_OVER:
                     if event.key in (pygame.K_RETURN, pygame.K_SPACE):
                         self.reset_match()
@@ -187,10 +187,7 @@ class Game:
                 self.victory_animation.update(dt)
             self._update_impacts(dt)
             if self.state == self.VICTORY:
-                self.victory_remaining -= dt
-                if self.victory_remaining <= 0.0:
-                    self.state = self.GAME_OVER
-                    self._play_sound("game_over")
+                self.victory_flash_remaining = max(0.0, self.victory_flash_remaining - dt)
             return
         if self.state != self.PLAYING:
             return
@@ -257,13 +254,16 @@ class Game:
                         self.victory_animation = victory_source.clone() if victory_source else None
                         winner_index = 0 if self.winner is self.players[0] else 1
                         self.flawless_victory = not self.player_was_hit[winner_index]
+                        self.victory_flash_remaining = 0.35
                         self.state = self.VICTORY
-                        self.victory_remaining = (
+                        if self.flawless_victory:
                             self._play_sound("flawless_victory")
-                            if self.flawless_victory
-                            else 1.2
-                        )
                         break
+
+    def _finish_victory(self) -> None:
+        """Passe à l'écran final après l'appui du joueur."""
+        self.state = self.GAME_OVER
+        self._play_sound("game_over")
 
     def draw(self) -> None:
         if self.state == self.MENU:
@@ -298,6 +298,7 @@ class Game:
                     self.PLAYER_NAMES[winner_index],
                     self.flawless_victory,
                     self.victory_animation,
+                    self.victory_flash_remaining,
                 )
             elif self.state == self.GAME_OVER:
                 winner_index = 0 if self.winner is self.players[0] else 1

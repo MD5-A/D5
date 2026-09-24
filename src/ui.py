@@ -1,5 +1,7 @@
 """Interface, HUD et effets visuels du jeu."""
 
+import math
+
 import pygame
 
 
@@ -10,6 +12,29 @@ class HUD:
         self.font = font
         self.title_font = title_font or font
         self.effect_time = 0.0
+        self._projectile_glows = {
+            False: self._make_projectile_glow((255, 225, 110, 85)),
+            True: self._make_projectile_glow((255, 175, 75, 105)),
+        }
+        self._impact_surfaces = {}
+
+    @staticmethod
+    def _make_projectile_glow(color) -> pygame.Surface:
+        glow = pygame.Surface((34, 24), pygame.SRCALPHA)
+        pygame.draw.ellipse(glow, color, glow.get_rect(), 3)
+        return glow
+
+    def _get_impact_surface(self, radius, color, alpha) -> pygame.Surface:
+        key = (radius, tuple(color), alpha)
+        if key not in self._impact_surfaces:
+            size = radius * 2 + 8
+            effect = pygame.Surface((size, size), pygame.SRCALPHA)
+            center = (size // 2, size // 2)
+            rgba = (*color, alpha)
+            pygame.draw.circle(effect, rgba, center, radius, 3)
+            pygame.draw.circle(effect, rgba, center, max(2, radius // 3))
+            self._impact_surfaces[key] = effect
+        return self._impact_surfaces[key]
 
     def update(self, dt: float) -> None:
         """Fait progresser les effets visuels sans toucher à la logique de jeu."""
@@ -74,9 +99,7 @@ class HUD:
         """Dessine un halo léger autour des projectiles existants."""
         for bullet in bullets:
             center = bullet.rect.center
-            color = (255, 175, 75, 105) if getattr(bullet, "charged", False) else (255, 225, 110, 85)
-            glow = pygame.Surface((34, 24), pygame.SRCALPHA)
-            pygame.draw.ellipse(glow, color, glow.get_rect(), 3)
+            glow = self._projectile_glows[getattr(bullet, "charged", False)]
             surface.blit(glow, glow.get_rect(center=center))
 
     def draw_impacts(self, surface, impacts) -> None:
@@ -85,11 +108,7 @@ class HUD:
             progress = impact["age"] / impact["duration"]
             radius = int(8 + progress * 26)
             alpha = max(0, int(190 * (1.0 - progress)))
-            effect = pygame.Surface((radius * 2 + 8, radius * 2 + 8), pygame.SRCALPHA)
-            center = (effect.get_width() // 2, effect.get_height() // 2)
-            color = (*impact["color"], alpha)
-            pygame.draw.circle(effect, color, center, radius, 3)
-            pygame.draw.circle(effect, color, center, max(2, radius // 3))
+            effect = self._get_impact_surface(radius, impact["color"], alpha)
             surface.blit(effect, effect.get_rect(center=impact["position"]))
 
     def draw_menu(self, surface, title, description, subtitle, previews=None) -> None:
@@ -130,11 +149,16 @@ class HUD:
         surface.blit(title, title.get_rect(center=(center[0], center[1] - 35)))
         surface.blit(instruction, instruction.get_rect(center=(center[0], center[1] + 30)))
 
-    def draw_victory(self, surface, winner, flawless, victory_animation=None) -> None:
+    def draw_victory(self, surface, winner, flawless, victory_animation=None, flash_remaining=0.0) -> None:
         """Affiche l'annonce de victoire avant l'écran final."""
         overlay = pygame.Surface(surface.get_size(), pygame.SRCALPHA)
         overlay.fill((8, 10, 24, 195))
         surface.blit(overlay, (0, 0))
+        if flash_remaining > 0.0:
+            alpha = min(180, int(600 * flash_remaining))
+            flash = pygame.Surface(surface.get_size(), pygame.SRCALPHA)
+            flash.fill((255, 240, 170, alpha))
+            surface.blit(flash, (0, 0))
         center_x = surface.get_width() // 2
         if victory_animation is not None:
             image = victory_animation.image
@@ -147,10 +171,24 @@ class HUD:
         )
         title_image = self.title_font.render(title, True, (255, 220, 110))
         message_image = self.font.render(message, True, (240, 243, 255))
-        next_image = self.font.render("Résultat final en préparation...", True, (184, 194, 220))
+        next_image = self.font.render("Appuyez sur une touche pour continuer", True, (184, 194, 220))
         surface.blit(title_image, title_image.get_rect(center=(center_x, 275)))
         surface.blit(message_image, message_image.get_rect(center=(center_x, 325)))
         surface.blit(next_image, next_image.get_rect(center=(center_x, 365)))
+        self._draw_victory_particles(surface, (center_x, 170), flawless)
+
+    def _draw_victory_particles(self, surface, center, flawless) -> None:
+        """Dessine des particules déterministes sans créer d'état par frame."""
+        colors = ((255, 220, 110), (255, 245, 190)) if flawless else ((150, 210, 255), (230, 240, 255))
+        particle_layer = pygame.Surface(surface.get_size(), pygame.SRCALPHA)
+        for index in range(12):
+            phase = self.effect_time * 2.5 + index * 0.52
+            radius = 70 + int(22 * math.sin(phase * 1.7))
+            x = center[0] + int(math.cos(phase) * radius)
+            y = center[1] + int(math.sin(phase * 1.3) * radius)
+            alpha = 110 + int(80 * (0.5 + 0.5 * math.sin(phase)))
+            pygame.draw.circle(particle_layer, (*colors[index % 2], alpha), (x, y), 3)
+        surface.blit(particle_layer, (0, 0))
 
     def draw_game_over(self, surface, winner, victory_animation=None, flawless=False, remaining_hp=0) -> None:
         """Affiche l'écran final et les détails de la manche."""
@@ -158,6 +196,9 @@ class HUD:
         overlay.fill((8, 10, 24, 205))
         surface.blit(overlay, (0, 0))
         center_x = surface.get_width() // 2
+        panel = pygame.Rect(220, 72, 520, 390)
+        pygame.draw.rect(surface, (18, 25, 49, 235), panel, border_radius=18)
+        pygame.draw.rect(surface, (110, 125, 185), panel, 2, border_radius=18)
         if victory_animation is not None:
             image = victory_animation.image
             surface.blit(image, image.get_rect(center=(center_x, 135)))
