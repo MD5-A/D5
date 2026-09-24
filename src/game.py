@@ -17,6 +17,7 @@ class Game:
 
     MENU = "menu"
     PLAYING = "playing"
+    PAUSED = "paused"
     GAME_OVER = "game_over"
     PLAYER_NAMES = ("Sam", "Emma")
 
@@ -25,10 +26,21 @@ class Game:
         self.screen = pygame.display.set_mode(SCREEN_SIZE)
         pygame.display.set_caption("D5")
         self.clock = pygame.time.Clock()
-        self.hud = HUD(pygame.font.Font(None, 26))
+        self.hud = HUD(pygame.font.Font(None, 26), pygame.font.Font(None, 42))
+        self.character_animations = {
+            "Sam": load_character_animations("alchemist", "alchemist"),
+            "Emma": load_character_animations("arcane-mage", "arcane-mage"),
+        }
+        self.menu_animations = {
+            name: animations["idle"].clone()
+            for name, animations in self.character_animations.items()
+            if "idle" in animations
+        }
         self.backgrounds = self._load_backgrounds()
         self.background = None
         self.background_name = None
+        self.victory_animation = None
+        self.impact_effects = []
         self.state = self.MENU
         self.running = True
         self.world = World(*SCREEN_SIZE)
@@ -57,6 +69,8 @@ class Game:
     def reset_match(self) -> None:
         """Recrée les objets dépendant d'une manche."""
         self.winner = None
+        self.victory_animation = None
+        self.impact_effects = []
         if self.backgrounds:
             self.background_name, self.background = random.choice(self.backgrounds)
         self.players = [
@@ -70,7 +84,7 @@ class Game:
                     "attack": pygame.K_LSHIFT,
                     "shield": pygame.K_s,
                 },
-                load_character_animations("alchemist", "alchemist"),
+                self._clone_character_animations("Sam"),
             ),
             Player(
                 (780, 300),
@@ -82,10 +96,25 @@ class Game:
                     "attack": pygame.K_RSHIFT,
                     "shield": pygame.K_DOWN,
                 },
-                load_character_animations("arcane-mage", "arcane-mage"),
+                self._clone_character_animations("Emma"),
             ),
         ]
         self.bullets = pygame.sprite.Group()
+
+    def _clone_character_animations(self, name: str) -> dict:
+        """Retourne des animations indépendantes à partir du cache mémoire."""
+        return {key: animation.clone() for key, animation in self.character_animations[name].items()}
+
+    def _add_impact(self, position, color) -> None:
+        """Ajoute un effet visuel sans modifier les règles de combat."""
+        self.impact_effects.append({"position": position, "color": color, "age": 0.0, "duration": 0.24})
+
+    def _update_impacts(self, dt: float) -> None:
+        for impact in self.impact_effects:
+            impact["age"] += dt
+        self.impact_effects = [
+            impact for impact in self.impact_effects if impact["age"] < impact["duration"]
+        ]
 
     def handle_events(self) -> None:
         for event in pygame.event.get():
@@ -96,7 +125,9 @@ class Game:
                     self.reset_match()
                     self.state = self.PLAYING
                 elif self.state == self.PLAYING and event.key == pygame.K_ESCAPE:
-                    self.state = self.MENU
+                    self.state = self.PAUSED
+                elif self.state == self.PAUSED and event.key == pygame.K_ESCAPE:
+                    self.state = self.PLAYING
                 elif self.state == self.GAME_OVER:
                     if event.key in (pygame.K_RETURN, pygame.K_SPACE):
                         self.reset_match()
@@ -105,8 +136,18 @@ class Game:
                         self.state = self.MENU
 
     def update(self, dt: float) -> None:
+        self.hud.update(dt)
+        for animation in self.menu_animations.values():
+            animation.update(dt)
+
+        if self.state == self.GAME_OVER:
+            if self.victory_animation is not None:
+                self.victory_animation.update(dt)
+            self._update_impacts(dt)
+            return
         if self.state != self.PLAYING:
             return
+        self._update_impacts(dt)
         keys = pygame.key.get_pressed()
         for player in self.players:
             fired = player.handle_input(keys, dt)
@@ -139,11 +180,13 @@ class Game:
                             target.parry_flash_timer = 0.12
                         bullet.owner = target
                         bullet.direction *= -1
+                        self._add_impact(target.rect.center, (120, 220, 255))
                         # Décaler légèrement pour éviter collision immédiate
                         bullet.rect.x += bullet.direction * 8
                     else:
                         # Blocage: le projectile est annulé, usure du bouclier
                         target.shield_durability = max(0, target.shield_durability - Player.SHIELD_WEAR_BLOCK)
+                        self._add_impact(target.rect.center, (80, 170, 255))
                         bullet.kill()
                 else:
                     # Pas de bouclier (ou cassé): dégâts à la santé
@@ -155,8 +198,13 @@ class Game:
                             owner.SHIELD_MAX, owner.shield_durability + Player.SHIELD_RECHARGE_ON_HIT
                         )
                     bullet.kill()
+                    self._add_impact(target.rect.center, (255, 170, 70))
                     if target.health == 0:
                         self.winner = bullet.owner
+                        winner_name = self.PLAYER_NAMES[0] if self.winner is self.players[0] else self.PLAYER_NAMES[1]
+                        animations = self.character_animations[winner_name]
+                        victory_source = animations.get("dance", animations.get("idle"))
+                        self.victory_animation = victory_source.clone() if victory_source else None
                         self.state = self.GAME_OVER
                         break
 
@@ -170,6 +218,7 @@ class Game:
                 "D5",
                 "Un jeu de combat PvP en arène pour deux joueurs.",
                 "Entrée ou Espace pour commencer",
+                self.menu_animations,
             )
         else:
             if self.background is not None:
@@ -179,11 +228,19 @@ class Game:
             self.world.draw(self.screen)
             for player in self.players:
                 player.draw(self.screen)
+            self.hud.draw_projectile_effects(self.screen, self.bullets)
             self.bullets.draw(self.screen)
+            self.hud.draw_impacts(self.screen, self.impact_effects)
             self.hud.draw(self.screen, self.players, self.PLAYER_NAMES)
-            if self.state == self.GAME_OVER:
+            if self.state == self.PAUSED:
+                self.hud.draw_pause(self.screen)
+            elif self.state == self.GAME_OVER:
                 winner_index = 0 if self.winner is self.players[0] else 1
-                self.hud.draw_game_over(self.screen, self.PLAYER_NAMES[winner_index])
+                self.hud.draw_game_over(
+                    self.screen,
+                    self.PLAYER_NAMES[winner_index],
+                    self.victory_animation,
+                )
         pygame.display.flip()
 
     def run(self) -> None:

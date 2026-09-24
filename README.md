@@ -53,11 +53,14 @@ La fenêtre du jeu s’appelle `D5` et utilise actuellement une résolution de
 ## Fonctionnement actuel
 
 - Le menu est affiché au démarrage.
+- Le menu présente Sam et Emma avec leurs contrôles.
 - `Entrée` ou `Espace` lance une manche.
 - Un background de `assets/bg/` est choisi aléatoirement au début de chaque
   manche.
-- `Échap` revient au menu pendant la partie.
+- `Échap` met la partie en pause ; `Échap` à nouveau reprend la partie.
 - Quand un joueur n’a plus de points de vie, l’écran de victoire apparaît.
+- L’écran de victoire affiche le personnage gagnant et son animation dédiée
+  lorsqu’elle est disponible.
 - `Entrée` ou `Espace` permet de recommencer une manche.
 - `Échap` permet de revenir au menu depuis l’écran de victoire.
 
@@ -69,6 +72,9 @@ La fenêtre du jeu s’appelle `D5` et utilise actuellement une résolution de
 | Saut / double saut | `Z` | `↑` |
 | Attaque chargée | maintenir `Shift gauche`, puis relâcher | maintenir `Shift droit`, puis relâcher |
 | Bouclier | `S` | `↓` |
+
+Le HUD affiche les noms, les HP numériques, la barre de vie, la durabilité du
+bouclier et la progression de charge du tir.
 
 ## Organisation des rôles
 
