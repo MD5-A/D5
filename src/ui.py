@@ -4,7 +4,7 @@ import pygame
 
 
 class HUD:
-    """Affiche les informations de jeu et les écrans du Dev 5."""
+    """Affiche les informations de jeu et les écrans."""
 
     def __init__(self, font: pygame.font.Font, title_font: pygame.font.Font | None = None):
         self.font = font
@@ -35,7 +35,7 @@ class HUD:
         return self._impact_surfaces[key]
 
     def update(self, dt: float) -> None:
-        """Fait progresser les effets visuels sans toucher à la logique de jeu."""
+        """Fait progresser les effets visuels."""
         self.effect_time += dt
 
     def draw_health_bar(self, surface, player, position, reverse=False) -> None:
@@ -111,7 +111,7 @@ class HUD:
             surface.blit(layer, layer.get_rect(center=effect["position"]))
 
     def draw_projectile_effects(self, surface, bullets) -> None:
-        """Dessine un halo léger autour des projectiles existants."""
+        """Dessine un halo léger autour des projectiles."""
         for bullet in bullets:
             center = bullet.rect.center
             glow = self._projectile_glows[getattr(bullet, "charged", False)]
@@ -172,7 +172,7 @@ class HUD:
         surface.blit(description_image, description_image.get_rect(center=(center_x, 100)))
 
         if previews:
-            cards = ((35, "Sam", "Q/D   Z   Shift gauche   S"), (605, "Emma", "gauche/droite   haut   Shift droit   bas"))
+            cards = ((35, "Sam", "Q/D   Z   L-SHIFT   S"), (605, "Emma", "G/D   H   R-SHIFT   B"))
             for x, name, controls in cards:
                 card = pygame.Rect(x, 125, 320, 215)
                 pygame.draw.rect(surface, (26, 35, 63, 220), card, border_radius=12)
@@ -211,8 +211,8 @@ class HUD:
         title = self.title_font.render("COMMANDES", True, (255, 220, 110))
         surface.blit(title, title.get_rect(center=(center_x, 80)))
         rows = (
-            ("Sam", "Q/D : bouger   Z : sauter   Shift gauche : tirer   S : bouclier"),
-            ("Emma", "gauche/droite : bouger   haut : sauter   Shift droit : tirer   bas : bouclier"),
+            ("Sam", "Q/D : bouger   Z : sauter   L-SHIFT : tirer   S : bouclier"),
+            ("Emma", "gauche/droite : bouger   haut : sauter   R-SHIFT : tirer   bas : bouclier"),
         )
         for index, (name, controls) in enumerate(rows):
             y = 190 + index * 100
@@ -231,9 +231,9 @@ class HUD:
         surface.blit(overlay, (0, 0))
         center = surface.get_rect().center
         title = self.title_font.render("PAUSE", True, (255, 220, 110))
-        instruction = self.font.render("Flèches : choisir   Entrée : valider   Échap : reprendre", True, (240, 243, 255))
+        # instruction = self.font.render("Flèches : choisir   Entrée : valider   Échap : reprendre", True, (240, 243, 255))
         surface.blit(title, title.get_rect(center=(center[0], center[1] - 35)))
-        surface.blit(instruction, instruction.get_rect(center=(center[0], center[1] + 5)))
+        # surface.blit(instruction, instruction.get_rect(center=(center[0], center[1] + 5)))
         buttons = self.pause_button_rects(surface)
         labels = (("resume", "REPRENDRE"), ("restart", "RECOMMENCER"), ("menu", "MENU"))
         for key, label in labels:
@@ -263,7 +263,7 @@ class HUD:
         if victory_animation is not None:
             image = victory_animation.image
             surface.blit(image, image.get_rect(center=(center_x, 170)))
-        title = "VICTOIRE PARFAITE !" if flawless else "VICTOIRE !"
+        title = "FLAWLESS VICTORY !" if flawless else "VICTOIRE !"
         message = (
             f"{winner} gagne sans avoir été touché."
             if flawless
@@ -293,13 +293,13 @@ class HUD:
         panel = pygame.Rect(120, 45, 720, 450)
         pygame.draw.rect(surface, (18, 25, 49, 235), panel, border_radius=18)
         pygame.draw.rect(surface, (110, 125, 185), panel, 2, border_radius=18)
-        title = self.title_font.render("FIN DE LA PARTIE", True, (255, 220, 110))
+        title = self.title_font.render("GAME OVER", True, (255, 220, 110))
         surface.blit(title, title.get_rect(center=(center_x, 82)))
         pygame.draw.line(surface, (110, 125, 185), (center_x, 125), (center_x, 440), 2)
         if victory_animation is not None:
             image = pygame.transform.smoothscale(victory_animation.image, (180, 180))
             surface.blit(image, image.get_rect(center=(300, 255)))
-        winner_label = self.font.render("GAGNANT", True, (184, 194, 220))
+        # winner_label = self.font.render("GAGNANT", True, (184, 194, 220))
         result = self.title_font.render(winner, True, (240, 243, 255))
         status = "Victoire parfaite : oui" if flawless else "Victoire parfaite : non"
         details = self.font.render(f"{status}", True, (210, 218, 240))
@@ -312,11 +312,11 @@ class HUD:
         if flawless:
             badge = pygame.Rect(510, 135, 250, 34)
             pygame.draw.rect(surface, (170, 120, 35), badge, border_radius=10)
-            badge_text = self.font.render("VICTOIRE PARFAITE", True, (255, 245, 190))
+            badge_text = self.font.render("FLAWLESS VICTORY", True, (255, 245, 190))
             surface.blit(badge_text, badge_text.get_rect(center=badge.center))
-        restart = self.font.render("Entrée ou Espace : revanche", True, (240, 243, 255))
+        restart = self.font.render("Entrée ou Espace : Recommencer", True, (240, 243, 255))
         menu = self.font.render("Échap : revenir au menu", True, (184, 194, 220))
-        surface.blit(winner_label, winner_label.get_rect(center=(300, 365)))
+        # surface.blit(winner_label, winner_label.get_rect(center=(300, 365)))
         surface.blit(result, result.get_rect(center=(300, 400)))
         surface.blit(details, details.get_rect(topleft=(510, 175)))
         surface.blit(hp, hp.get_rect(topleft=(510, 215)))

@@ -59,7 +59,7 @@ class Game:
         self.reset_match()
 
     def _load_sounds(self) -> dict[str, pygame.mixer.Sound]:
-        """Charge les effets audio une seule fois, avec un fallback silencieux."""
+        """Charge les effets audio une seule fois, avec un fallback furtif."""
         try:
             if pygame.mixer.get_init() is None:
                 pygame.mixer.init()
@@ -188,7 +188,7 @@ class Game:
         return {key: animation.clone() for key, animation in self.character_animations[name].items()}
 
     def _add_impact(self, position, color) -> None:
-        """Ajoute un effet visuel sans modifier les règles de combat."""
+        """Ajoute un effet visuel."""
         self.impact_effects.append({"position": position, "color": color, "age": 0.0, "duration": 0.24})
 
     def _update_impacts(self, dt: float) -> None:
@@ -354,7 +354,7 @@ class Game:
                         break
 
     def _finish_victory(self) -> None:
-        """Passe à l'écran final après l'appui du joueur."""
+        """Passe à l'écran final après l'appui d'une touche'."""
         self._change_state(self.GAME_OVER)
         self._play_sound("game_over")
 
@@ -366,8 +366,8 @@ class Game:
             self.hud.draw_menu(
                 self.screen,
                 "D5",
-                "Un jeu de combat PvP en arène pour deux joueurs.",
-                "Entrée ou Espace pour commencer",
+                "Jeu de combat en PvP.",
+                "Appuyez sur la touche Entrée ou Espace pour commencer",
                 self.menu_animations,
                 ("play", "controls", "quit")[self.menu_selection],
             )
