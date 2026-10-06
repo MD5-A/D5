@@ -126,6 +126,27 @@ class HUD:
             effect = self._get_impact_surface(radius, impact["color"], alpha)
             surface.blit(effect, effect.get_rect(center=impact["position"]))
 
+    def draw_platforms(self, surface, platforms) -> None:
+        """Habille les plateformes existantes sans modifier leurs collisions."""
+        for platform in platforms:
+            rect = platform.rect
+            shadow = rect.move(0, 5)
+            pygame.draw.rect(surface, (8, 14, 30), shadow, border_radius=4)
+            pygame.draw.rect(surface, (31, 47, 78), rect, border_radius=4)
+            if rect.width > 4 and rect.height > 4:
+                inner = rect.inflate(-4, -4)
+                pygame.draw.rect(surface, (44, 65, 101), inner, border_radius=3)
+            pygame.draw.line(
+                surface,
+                (124, 185, 220),
+                (rect.left + 4, rect.top + 2),
+                (rect.right - 5, rect.top + 2),
+                2,
+            )
+            if rect.height >= 12:
+                for x in range(rect.left + 18, rect.right - 8, 36):
+                    pygame.draw.circle(surface, (91, 139, 177), (x, rect.centery), 2)
+
     @staticmethod
     def menu_button_rects(surface) -> dict[str, pygame.Rect]:
         """Retourne les zones interactives du menu principal."""
