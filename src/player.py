@@ -1,7 +1,8 @@
 """Classe représentant un combattant."""
 
-import pygame
 import math
+
+import pygame
 
 
 class Player(pygame.sprite.Sprite):
@@ -49,6 +50,7 @@ class Player(pygame.sprite.Sprite):
         self.facing = 1
         self.health = 100
         self.moving = False
+        self.visual_state = "airborne"
 
         # Double saut
         self.max_jumps = 2
@@ -118,13 +120,10 @@ class Player(pygame.sprite.Sprite):
             self.moving = True
             self.dash_time_remaining -= dt
         else:
-            if lp:
-                self.rect.x -= self.SPEED
-                self.facing = -1
-                self.moving = True
-            if rp:
-                self.rect.x += self.SPEED
-                self.facing = 1
+            horizontal_direction = int(rp) - int(lp)
+            if horizontal_direction:
+                self.rect.x += horizontal_direction * self.SPEED
+                self.facing = horizontal_direction
                 self.moving = True
 
         # Double saut (détection de front)
@@ -186,8 +185,25 @@ class Player(pygame.sprite.Sprite):
 
         return fired_info or {"fired": False}
 
+    def sync_input_state(self, keys) -> None:
+        """Synchronise les touches déjà maintenues sans déclencher d'action."""
+        self._prev_attack_pressed = keys[self.controls["attack"]]
+        self._prev_shield_pressed = keys[self.controls["shield"]]
+        self._prev_left_pressed = keys[self.controls["left"]]
+        self._prev_right_pressed = keys[self.controls["right"]]
+        self._prev_jump_pressed = keys[self.controls["jump"]]
+
     def update_visual(self, dt: float) -> None:
-        wanted = self.animations.get("run" if self.moving else "idle")
+        if not self.on_ground:
+            self.visual_state = "airborne"
+        elif self.moving:
+            self.visual_state = "run"
+        else:
+            self.visual_state = "idle"
+
+        # Aucun spritesheet de saut n'est encore défini : l'état airborne
+        # conserve donc l'animation idle au lieu de jouer run dans les airs.
+        wanted = self.animations.get("run" if self.visual_state == "run" else "idle")
         if wanted is not None and wanted is not self.animation:
             self.animation = wanted
         if self.animation is not None:
@@ -318,3 +334,5 @@ class Player(pygame.sprite.Sprite):
         # FX de charge (pendant la charge et flash au tir)
         if getattr(self, "charging", False) or getattr(self, "charge_flash_timer", 0.0) > 0.0:
             draw_charge_fx(sprite_rect)
+
+# here we are, the world is running false : the darkest night is coming...

@@ -160,6 +160,10 @@ class Game:
             self.menu_selection = 0
         elif state == self.PAUSED:
             self.pause_selection = 0
+        elif state == self.PLAYING and hasattr(self, "players"):
+            keys = pygame.key.get_pressed()
+            for player in self.players:
+                player.sync_input_state(keys)
 
     @staticmethod
     def _move_selection(selection: int, delta: int, count: int) -> int:
@@ -291,7 +295,7 @@ class Game:
                 shooter_index = 0 if player is self.players[0] else 1
                 self.match_stats[shooter_index]["shots"] += 1
             self.world.apply_gravity(player)
-            player.rect.clamp_ip(self.screen.get_rect())
+            self.world.keep_inside_world(player)
             player.update_visual(dt)
 
         self.bullets.update(self.screen)
@@ -382,6 +386,7 @@ class Game:
             else:
                 self.screen.fill(COLOR_BACKGROUND)
             self.world.draw(self.screen)
+            self.hud.draw_platforms(self.screen, self.world.platforms)
             for player in self.players:
                 player.draw(self.screen)
             self.hud.draw_shield_break_effects(self.screen, self.shield_break_effects)
