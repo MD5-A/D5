@@ -266,3 +266,4 @@ Ne jamais valider des marqueurs de conflit comme `<<<<<<<`, `=======` ou
 python -m compileall -q src
 rg -n '^(<<<<<<<|=======|>>>>>>>)' src
 ```
+Si ce jeu vous a plu, n'hésiez pas à lacher une étoile pour ce repo, thanks...
